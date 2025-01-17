@@ -8,6 +8,7 @@
 #define IDD_LFSDWIN11UX_DIALOG	102
 #define IDD_ABOUTBOX			103
 #define IDD_UNKNOWNBOX          111
+#define IDD_CONTRIBUTEBOX       112
 #define IDM_ABOUT				104
 #define IDM_EXIT				105
 #define IDM_CONTRIBUTE			106
