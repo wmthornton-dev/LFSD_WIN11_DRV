@@ -161,14 +161,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// Message handler for about box.
+// Message handler for About box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
     {
     case WM_INITDIALOG:
+    {
+        // Check for the Close button of the dialog box
+        HMENU hMenu = GetSystemMenu(hDlg, FALSE);
+        if (hMenu != NULL)
+        {
+            // Gray the Close button of the dialog box if it exists
+            DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND);
+        }
+
+        // Center the dialog box in the main program window
+        HWND hWndParent = GetParent(hDlg);
+        RECT rcParent, rcDlg;
+        GetWindowRect(hWndParent, &rcParent);
+        GetWindowRect(hDlg, &rcDlg);
+
+        int dlgWidth = rcDlg.right - rcDlg.left;
+        int dlgHeight = rcDlg.bottom - rcDlg.top;
+        int parentWidth = rcParent.right - rcParent.left;
+        int parentHeight = rcParent.bottom - rcParent.top;
+
+        int x = rcParent.left + (parentWidth - dlgWidth) / 2;
+        int y = rcParent.top + (parentHeight - dlgHeight) / 2;
+
+        SetWindowPos(hDlg, HWND_TOP, x, y, 0, 0, SWP_NOSIZE);
+
         return (INT_PTR)TRUE;
+    }
 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
