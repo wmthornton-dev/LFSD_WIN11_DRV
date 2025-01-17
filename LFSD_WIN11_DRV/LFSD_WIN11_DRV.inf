@@ -1,0 +1,62 @@
+;
+; LFSD_WIN11_DRV.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System ; TODO: specify appropriate Class
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
+Provider    = %ManufacturerName%
+CatalogFile = LFSD_WIN11_DRV.cat
+DriverVer   = ; TODO: set DriverVer in stampinf property pages
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+LFSD_WIN11_DRV.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NT$ARCH$.10.0...16299 ; %13% support introduced in build 16299
+
+[Standard.NT$ARCH$.10.0...16299]
+%LFSD_WIN11_DRV.DeviceDesc% = LFSD_WIN11_DRV_Device, Root\LFSD_WIN11_DRV ; TODO: edit hw-id
+
+[LFSD_WIN11_DRV_Device.NT]
+CopyFiles = File_Copy
+
+[File_Copy]
+LFSD_WIN11_DRV.sys
+
+;-------------- Service installation
+[LFSD_WIN11_DRV_Device.NT.Services]
+AddService = LFSD_WIN11_DRV,%SPSVCINST_ASSOCSERVICE%, LFSD_WIN11_DRV_Service_Inst
+
+; -------------- LFSD_WIN11_DRV driver install sections
+[LFSD_WIN11_DRV_Service_Inst]
+DisplayName    = %LFSD_WIN11_DRV.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\LFSD_WIN11_DRV.sys
+
+[LFSD_WIN11_DRV_Device.NT.Wdf]
+KmdfService = LFSD_WIN11_DRV, LFSD_WIN11_DRV_wdfsect
+
+[LFSD_WIN11_DRV_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+DiskName = "LFSD_WIN11_DRV Installation Disk"
+LFSD_WIN11_DRV.DeviceDesc = "LFSD_WIN11_DRV Device"
+LFSD_WIN11_DRV.SVCDESC = "LFSD_WIN11_DRV Service"
