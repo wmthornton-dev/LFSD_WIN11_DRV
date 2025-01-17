@@ -9,10 +9,12 @@
 #define IDD_ABOUTBOX			103
 #define IDD_UNKNOWNBOX          111
 #define IDD_CONTRIBUTEBOX       112
+#define IDD_HELPBOX             114
 #define IDM_ABOUT				104
 #define IDM_EXIT				105
 #define IDM_CONTRIBUTE			106
 #define IDM_UNKNOWN				110
+#define IDM_HELP				113
 #define IDI_LFSDWIN11UX			107
 #define IDI_SMALL				108
 #define IDC_LFSDWIN11UX			109

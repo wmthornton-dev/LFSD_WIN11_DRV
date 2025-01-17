@@ -20,6 +20,7 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Unknown(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Contribute(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    Help(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -135,6 +136,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Parse the menu selections:
             switch (wmId)
             {
+			case IDM_HELP:
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
+				break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -263,6 +267,52 @@ INT_PTR CALLBACK Unknown(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 // Message handler for Contribute dialog box.
 INT_PTR CALLBACK Contribute(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(lParam);
+    switch (message)
+    {
+    case WM_INITDIALOG:
+    {
+        // Check for the Close button of the dialog box
+        HMENU hMenu = GetSystemMenu(hDlg, FALSE);
+        if (hMenu != NULL)
+        {
+            // Gray the Close button of the dialog box if it exists
+            DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND);
+        }
+
+        // Center the dialog box in the main program window
+        HWND hWndParent = GetParent(hDlg);
+        RECT rcParent, rcDlg;
+        GetWindowRect(hWndParent, &rcParent);
+        GetWindowRect(hDlg, &rcDlg);
+
+        int dlgWidth = rcDlg.right - rcDlg.left;
+        int dlgHeight = rcDlg.bottom - rcDlg.top;
+        int parentWidth = rcParent.right - rcParent.left;
+        int parentHeight = rcParent.bottom - rcParent.top;
+
+        int x = rcParent.left + (parentWidth - dlgWidth) / 2;
+        int y = rcParent.top + (parentHeight - dlgHeight) / 2;
+
+        SetWindowPos(hDlg, HWND_TOP, x, y, 0, 0, SWP_NOSIZE);
+
+        return (INT_PTR)TRUE;
+    }
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+
+// Message handler for Unknown error box.
+INT_PTR CALLBACK Help(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
