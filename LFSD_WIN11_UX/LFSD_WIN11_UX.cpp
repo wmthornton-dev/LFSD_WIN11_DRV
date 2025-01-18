@@ -12,6 +12,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
+#include <string>
 
 HIMAGELIST hImageList;
 
@@ -32,7 +33,8 @@ INT_PTR CALLBACK    Unknown(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Contribute(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Help(HWND, UINT, WPARAM, LPARAM);
 HWND hStatus;
-HWND hListView;
+HWND hListViewDrives;
+HWND hListViewVolumes;
 void UpdateStatusBarText(int part, const wchar_t* text);
 
 
@@ -49,8 +51,9 @@ void UpdateStatusBarText(int part, const wchar_t* text)
 
 void PopulateDrives()
 {
+    UpdateStatusBarText(0, L"Updating drives and volumes...");
     // Clear the existing items
-    ListView_DeleteAllItems(hListView);
+    ListView_DeleteAllItems(hListViewDrives);
     ImageList_RemoveAll(hImageList);
 
     // Add the drives and partitions to the ListView
@@ -92,27 +95,66 @@ void PopulateDrives()
             // Insert the drive information into the ListView
             LVITEM lvItem = { 0 };
             lvItem.mask = LVIF_TEXT | LVIF_IMAGE;
-            lvItem.iItem = ListView_GetItemCount(hListView);
+            lvItem.iItem = ListView_GetItemCount(hListViewDrives);
             lvItem.iSubItem = 0;
             lvItem.pszText = driveName;
             lvItem.iImage = iconIndex;
-            ListView_InsertItem(hListView, &lvItem);
+            ListView_InsertItem(hListViewDrives, &lvItem);
 
             //ListView_SetItemText(hListView, lvItem.iItem, 1, driveName);
-            ListView_SetItemText(hListView, lvItem.iItem, 1, (LPWSTR)driveTypeStr);
-            ListView_SetItemText(hListView, lvItem.iItem, 2, fileSystemName);
+            ListView_SetItemText(hListViewDrives, lvItem.iItem, 1, (LPWSTR)driveTypeStr);
+            ListView_SetItemText(hListViewDrives, lvItem.iItem, 2, fileSystemName);
 
             WCHAR sizeStr[64];
             swprintf_s(sizeStr, 64, L"%llu GB", totalNumberOfBytes.QuadPart / (1024 * 1024 * 1024));
-            ListView_SetItemText(hListView, lvItem.iItem, 3, sizeStr);
+            ListView_SetItemText(hListViewDrives, lvItem.iItem, 3, sizeStr);
 
             swprintf_s(sizeStr, 64, L"%llu GB", usedBytes / (1024 * 1024 * 1024));
-            ListView_SetItemText(hListView, lvItem.iItem, 4, sizeStr);
+            ListView_SetItemText(hListViewDrives, lvItem.iItem, 4, sizeStr);
 
-            // Codepage and physical address are not directly available, so we leave them empty for now
-            ListView_SetItemText(hListView, lvItem.iItem, 5, (LPWSTR)L"");
-            ListView_SetItemText(hListView, lvItem.iItem, 6, (LPWSTR)L"");
+            // Physical address not directly available, so we leave empty for now
+            ListView_SetItemText(hListViewDrives, lvItem.iItem, 5, (LPWSTR)L"");
         }
+    }
+}
+
+void ResizeDriveViewColumns()
+{
+    UpdateStatusBarText(0, L"Resizing columns...");
+    RECT rect;
+    GetClientRect(hListViewDrives, &rect);
+    int listViewWidth = rect.right - rect.left;
+
+    // Number of columns
+    int numColumns = 6;
+
+    // Calculate the width of each column
+    int columnWidth = listViewWidth / numColumns;
+
+    // Set the width of each column
+    for (int i = 0; i < numColumns; ++i)
+    {
+        ListView_SetColumnWidth(hListViewDrives, i, columnWidth);
+    }
+}
+
+void ResizeVolumeViewColumns()
+{
+    UpdateStatusBarText(0, L"Resizing columns...");
+    RECT rect;
+    GetClientRect(hListViewDrives, &rect);
+    int listViewWidth = rect.right - rect.left;
+
+    // Number of columns
+    int numColumns = 6;
+
+    // Calculate the width of each column
+    int columnWidth = listViewWidth / numColumns;
+
+    // Set the width of each column
+    for (int i = 0; i < numColumns; ++i)
+    {
+        ListView_SetColumnWidth(hListViewVolumes, i, columnWidth);
     }
 }
 
@@ -217,49 +259,73 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    SendMessage(hStatus, SB_SETPARTS, _countof(statusWidths), (LPARAM)statusWidths);
    SendMessage(hStatus, SB_SETTEXT, 0, (LPARAM)L"Ready");
 
-   // Create the ListView control for displaying the drives and volumes
-   hListView = CreateWindowW(WC_LISTVIEW, L"",
-       WS_CHILD | WS_VISIBLE | LVS_REPORT,
+   // Create the ListView controls for displaying the drives and volumes
+   hListViewDrives = CreateWindowW(WC_LISTVIEW, L"Drives",
+       WS_CHILD | WS_VISIBLE | WS_EX_CLIENTEDGE | LVS_REPORT,
        0, 0, 590, 150, hWnd, nullptr, hInstance, nullptr);
+   hListViewVolumes = CreateWindowW(WC_LISTVIEW, L"Volumes",
+       WS_CHILD | WS_VISIBLE | WS_EX_CLIENTEDGE |LVS_REPORT,
+       0, 160, 590, 150, hWnd, nullptr, hInstance, nullptr);
 
    // Create the image list
    hImageList = ImageList_Create(16, 16, ILC_COLOR32, 1, 1);
-   ListView_SetImageList(hListView, hImageList, LVSIL_SMALL);
+   ListView_SetImageList(hListViewDrives, hImageList, LVSIL_SMALL);
 
    // Initialize the ListView columns
    LVCOLUMN lvColumn;
    lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
    lvColumn.cx = 100;
 
-   // Define the column text as non-const wchar_t arrays
+   // Define the Drives column text as non-const wchar_t arrays
    wchar_t iconText[] = L"Drive";
    wchar_t typeText[] = L"Type";
    wchar_t fileSystemText[] = L"File System";
    wchar_t totalSizeText[] = L"Total Size";
    wchar_t usedSizeText[] = L"Used Size";
-   wchar_t codepageText[] = L"Codepage";
-   wchar_t physicalAddressText[] = L"Physical Address";
+   wchar_t physicalAddressText[] = L"Physical";
+
+   // Define the Volumes column text as non-const wchar_t arrays
+   wchar_t iconTextv[] = L"";
+   wchar_t typeTextv[] = L"Type";
+   wchar_t fileSystemTextv[] = L"File System";
+   wchar_t totalSizeTextv[] = L"Total Size";
+   wchar_t usedSizeTextv[] = L"Used Size";
+   wchar_t partitionTypeTextv[] = L"Partition Type";
 
    lvColumn.pszText = iconText;
-   ListView_InsertColumn(hListView, 0, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 0, &lvColumn);
+   lvColumn.pszText = iconTextv;
+   ListView_InsertColumn(hListViewVolumes, 0, &lvColumn);
 
    lvColumn.pszText = typeText;
-   ListView_InsertColumn(hListView, 1, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 1, &lvColumn);
+   lvColumn.pszText = typeTextv;
+   ListView_InsertColumn(hListViewVolumes, 1, &lvColumn);
 
    lvColumn.pszText = fileSystemText;
-   ListView_InsertColumn(hListView, 2, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 2, &lvColumn);
+   lvColumn.pszText = fileSystemTextv;
+   ListView_InsertColumn(hListViewVolumes, 2, &lvColumn);
 
    lvColumn.pszText = totalSizeText;
-   ListView_InsertColumn(hListView, 3, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 3, &lvColumn);
+   lvColumn.pszText = totalSizeTextv;
+   ListView_InsertColumn(hListViewVolumes, 3, &lvColumn);
 
    lvColumn.pszText = usedSizeText;
-   ListView_InsertColumn(hListView, 4, &lvColumn);
-
-   lvColumn.pszText = codepageText;
-   ListView_InsertColumn(hListView, 5, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 4, &lvColumn);
+   lvColumn.pszText = usedSizeTextv;
+   ListView_InsertColumn(hListViewVolumes, 4, &lvColumn);
 
    lvColumn.pszText = physicalAddressText;
-   ListView_InsertColumn(hListView, 6, &lvColumn);
+   ListView_InsertColumn(hListViewDrives, 5, &lvColumn);
+
+   lvColumn.pszText = partitionTypeTextv;
+   ListView_InsertColumn(hListViewVolumes, 5, &lvColumn);
+
+   // Resize the columns of the ListView to fit the window
+   ResizeDriveViewColumns();
+   ResizeVolumeViewColumns();
 
    // Get the screen dimensions
    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -325,9 +391,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
+    case WM_NOTIFY:
+    {
+        LPNMHDR pnmhdr = (LPNMHDR)lParam;
+        if (pnmhdr->hwndFrom == ListView_GetHeader(hListViewDrives))
+        {
+            if (pnmhdr->code == HDN_BEGINTRACKW || pnmhdr->code == HDN_BEGINTRACKA)
+            {
+                return TRUE; // Prevent column resizing
+            }
+            else if (pnmhdr->code == HDN_ITEMCHANGINGW || pnmhdr->code == HDN_ITEMCHANGINGA)
+            {
+                LPNMHEADER pnmHeader = (LPNMHEADER)lParam;
+                if (!(pnmHeader->pitem->mask & HDI_WIDTH))
+                {
+                    return TRUE; // Prevent column deletion or other modifications
+                }
+            }
+        }
+        break;
+    }
+
     case WM_SIZE:
         // Resize the status bar
         SendMessage(hStatus, WM_SIZE, 0, 0);
+        // Resize the drive view columns
+        ResizeDriveViewColumns();
         break;
 
     case WM_GETMINMAXINFO:
