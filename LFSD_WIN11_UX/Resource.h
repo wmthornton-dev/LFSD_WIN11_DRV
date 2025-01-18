@@ -18,6 +18,8 @@
 #define IDI_LFSDWIN11UX			107
 #define IDI_SMALL				108
 #define IDC_LFSDWIN11UX			109
+#define IDC_LFSDWIN11UX_UNKNOWN 120
+#define IDC_ERROR				121
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

@@ -142,6 +142,8 @@
     <ResourceCompile Include="LFSD_WIN11_UX.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="bug.ico" />
+    <Image Include="error.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
