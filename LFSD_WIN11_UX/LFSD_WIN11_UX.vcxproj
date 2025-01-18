@@ -139,13 +139,13 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LFSD_WIN11_UX.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="LFSD_WIN11_UX.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LFSD_WIN11_UX.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

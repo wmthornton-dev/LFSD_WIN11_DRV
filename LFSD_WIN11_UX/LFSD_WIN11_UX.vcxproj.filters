@@ -29,11 +29,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LFSD_WIN11_UX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="LFSD_WIN11_UX.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
@@ -42,5 +37,10 @@
     <Image Include="small.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LFSD_WIN11_UX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
