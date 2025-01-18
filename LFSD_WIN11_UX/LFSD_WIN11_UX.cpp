@@ -195,7 +195,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SYSTEMTIME st;
             GetLocalTime(&st);
             wchar_t dateTime[100];
-            swprintf_s(dateTime, 100, L"%02d/%02d/%04d %02d:%02d:%02d", st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
+            swprintf_s(dateTime, 100, L"%02d/%02d/%04d %02d:%02d:%02d", st.wMonth, st.wDay, st.wYear, st.wHour, st.wMinute, st.wSecond);
 
             // Update the status bar
             SendMessage(hStatus, SB_SETTEXT, 0, (LPARAM)L"Ready");
@@ -207,6 +207,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // Resize the status bar
         SendMessage(hStatus, WM_SIZE, 0, 0);
         break;
+
+    case WM_GETMINMAXINFO:
+    {
+        MINMAXINFO* pMinMaxInfo = (MINMAXINFO*)lParam;
+        pMinMaxInfo->ptMinTrackSize.x = 600;
+        pMinMaxInfo->ptMinTrackSize.y = 450;
+        pMinMaxInfo->ptMaxTrackSize.x = 600;
+        pMinMaxInfo->ptMaxTrackSize.y = 450;
+        break;
+    }
 
     case WM_COMMAND:
     {
