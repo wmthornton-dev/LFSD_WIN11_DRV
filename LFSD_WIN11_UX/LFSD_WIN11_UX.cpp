@@ -7,6 +7,8 @@
 #pragma comment(lib, "dwmapi.lib")
 #include <commctrl.h>
 #pragma comment(lib, "comctl32.lib")
+#include <shellapi.h>
+#pragma comment(lib, "Shell32.lib")
 
 #define MAX_LOADSTRING 100
 
@@ -201,8 +203,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wmId)
         {
         case IDM_HELP:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
+        {
+            // Check for the presence of the "Help.lfsd" file
+            WIN32_FIND_DATA findFileData;
+            HANDLE hFind = FindFirstFile(L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.lfsd", &findFileData);
+
+            if (hFind != INVALID_HANDLE_VALUE)
+            {
+                // File exists, open it in Notepad.exe
+                FindClose(hFind);
+                ShellExecute(NULL, L"open", L"msedge.exe", L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.lfsd", NULL, SW_SHOWNORMAL);
+            }
+            else
+            {
+                // File does not exist, show the help dialog
+                DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
+            }
             break;
+        }
         case IDM_ABOUT:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
             break;
