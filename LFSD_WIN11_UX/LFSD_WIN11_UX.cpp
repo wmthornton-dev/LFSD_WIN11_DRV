@@ -108,13 +108,33 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
 
+   /*HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);*/
+
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+       CW_USEDEFAULT, 0, 600, 450, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
       return FALSE;
    }
+
+   // Get the screen dimensions
+   int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+   int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+   // Get the window dimensions
+   RECT windowRect;
+   GetWindowRect(hWnd, &windowRect);
+   int windowWidth = windowRect.right - windowRect.left;
+   int windowHeight = windowRect.bottom - windowRect.top;
+
+   // Calculate the position to center the window
+   int xPos = (screenWidth - windowWidth) / 2;
+   int yPos = (screenHeight - windowHeight) / 2;
+
+   // Set the window position
+   SetWindowPos(hWnd, HWND_TOP, xPos, yPos, 0, 0, SWP_NOSIZE);
 
    //EnableDarkMode(hWnd);
    ShowWindow(hWnd, nCmdShow);
@@ -122,6 +142,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    return TRUE;
 }
+
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -137,40 +158,43 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_INITDIALOG:
+        return TRUE;
+
     case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Parse the menu selections:
+        switch (wmId)
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-			case IDM_HELP:
-				DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
-				break;
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-			case IDM_CONTRIBUTE:
-				DialogBox(hInst, MAKEINTRESOURCE(IDD_CONTRIBUTEBOX), hWnd, Contribute);
-                break;
-			case IDM_UNKNOWN:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_UNKNOWNBOX), hWnd, Unknown);
-				break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+        case IDM_HELP:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
+            break;
+        case IDM_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_CONTRIBUTE:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_CONTRIBUTEBOX), hWnd, Contribute);
+            break;
+        case IDM_UNKNOWN:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_UNKNOWNBOX), hWnd, Unknown);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        break;
+    }
+    break;
     case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: Add any drawing code that uses hdc here...
+        EndPaint(hWnd, &ps);
+    }
+    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -179,6 +203,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+
 
 // Message handler for About box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
