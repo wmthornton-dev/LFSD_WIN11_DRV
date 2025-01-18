@@ -26,12 +26,19 @@ INT_PTR CALLBACK    Unknown(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Contribute(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Help(HWND, UINT, WPARAM, LPARAM);
 HWND hStatus;
+void UpdateStatusBarText(int part, const wchar_t* text);
+
 
 //void EnableDarkMode(HWND hWnd)
 //{
 //    BOOL darkMode = TRUE;
 //    DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 //}
+
+void UpdateStatusBarText(int part, const wchar_t* text)
+{
+    SendMessage(hStatus, SB_SETTEXT, part, (LPARAM)text);
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -119,16 +126,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
    
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX,
        CW_USEDEFAULT, 0, 600, 450, nullptr, nullptr, hInstance, nullptr);
 
    // Create the status bar
-   hStatus = CreateStatusWindow(WS_CHILD | WS_VISIBLE | SBT_NOBORDERS, L"Ready", hWnd, IDC_STATUSBAR);
+   hStatus = CreateStatusWindow(WS_CHILD | WS_VISIBLE, L"Ready", hWnd, IDC_STATUSBAR);
 
    if (!hWnd)
    {
       return FALSE;
    }
+
+   // Set the parts of the status bar
+   int statusWidths[] = { 450, -1 };
+   SendMessage(hStatus, SB_SETPARTS, _countof(statusWidths), (LPARAM)statusWidths);
+   SendMessage(hStatus, SB_SETTEXT, 0, (LPARAM)L"Ready");
 
    // Get the screen dimensions
    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -210,13 +222,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             if (hFind != INVALID_HANDLE_VALUE)
             {
-                // File exists, open it in Notepad.exe
+                // File exists, open it in MSEDGE.exe
+				UpdateStatusBarText(0, L"Opening help file...");
                 FindClose(hFind);
                 ShellExecute(NULL, L"open", L"msedge.exe", L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.html", NULL, SW_SHOWNORMAL);
             }
             else
             {
                 // File does not exist, show the help dialog
+				UpdateStatusBarText(0, L"Help file not found...");
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_HELPBOX), hWnd, Help);
             }
             break;
@@ -231,6 +245,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             DialogBox(hInst, MAKEINTRESOURCE(IDD_UNKNOWNBOX), hWnd, Unknown);
             break;
         case IDM_EXIT:
+            UpdateStatusBarText(0, L"Exiting...");
             DestroyWindow(hWnd);
             break;
         default:

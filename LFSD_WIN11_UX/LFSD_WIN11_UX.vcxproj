@@ -149,6 +149,9 @@
   <ItemGroup>
     <ClCompile Include="LFSD_WIN11_UX.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="LFSD_Manager\Help\Help.html" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
