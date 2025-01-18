@@ -3,8 +3,10 @@
 
 #include "framework.h"
 #include "LFSD_WIN11_UX.h"
-//#include <dwmapi.h>
-//#pragma comment(lib, "dwmapi.lib")
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
+#include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
 
 #define MAX_LOADSTRING 100
 
@@ -21,6 +23,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Unknown(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Contribute(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Help(HWND, UINT, WPARAM, LPARAM);
+HWND hStatus;
 
 //void EnableDarkMode(HWND hWnd)
 //{
@@ -35,6 +38,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
+
+    // Initialize common controls
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_BAR_CLASSES;
+    InitCommonControlsEx(&icex);
 
     // TODO: Place code here.
 
@@ -107,12 +116,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
-
-   /*HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);*/
-
+   
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
        CW_USEDEFAULT, 0, 600, 450, nullptr, nullptr, hInstance, nullptr);
+
+   // Create the status bar
+   hStatus = CreateStatusWindow(WS_CHILD | WS_VISIBLE | SBT_NOBORDERS, L"Ready", hWnd, IDC_STATUSBAR);
 
    if (!hWnd)
    {
@@ -156,10 +165,34 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static UINT_PTR timerId;
+
     switch (message)
     {
-    case WM_INITDIALOG:
-        return TRUE;
+    case WM_CREATE:
+        // Set a timer to update the status bar every second
+        timerId = SetTimer(hWnd, 1, 1000, NULL);
+        break;
+
+    case WM_TIMER:
+        if (wParam == 1)
+        {
+            // Get the current date and time
+            SYSTEMTIME st;
+            GetLocalTime(&st);
+            wchar_t dateTime[100];
+            swprintf_s(dateTime, 100, L"%02d/%02d/%04d %02d:%02d:%02d", st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
+
+            // Update the status bar
+            SendMessage(hStatus, SB_SETTEXT, 0, (LPARAM)L"Ready");
+            SendMessage(hStatus, SB_SETTEXT, 1, (LPARAM)dateTime);
+        }
+        break;
+
+    case WM_SIZE:
+        // Resize the status bar
+        SendMessage(hStatus, WM_SIZE, 0, 0);
+        break;
 
     case WM_COMMAND:
     {
@@ -187,6 +220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
     }
     break;
+
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
@@ -195,14 +229,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         EndPaint(hWnd, &ps);
     }
     break;
+
     case WM_DESTROY:
+        KillTimer(hWnd, timerId);
         PostQuitMessage(0);
         break;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
 }
+
 
 
 // Message handler for About box.
@@ -349,7 +387,7 @@ INT_PTR CALLBACK Contribute(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
     return (INT_PTR)FALSE;
 }
 
-// Message handler for Unknown error box.
+// Message handler for Help dialog box.
 INT_PTR CALLBACK Help(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
