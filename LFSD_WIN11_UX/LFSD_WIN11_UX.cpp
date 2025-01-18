@@ -9,6 +9,12 @@
 #pragma comment(lib, "comctl32.lib")
 #include <shellapi.h>
 #pragma comment(lib, "Shell32.lib")
+#include <shlobj.h>
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+
+HIMAGELIST hImageList;
+
 
 #define MAX_LOADSTRING 100
 
@@ -26,6 +32,7 @@ INT_PTR CALLBACK    Unknown(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Contribute(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Help(HWND, UINT, WPARAM, LPARAM);
 HWND hStatus;
+HWND hListView;
 void UpdateStatusBarText(int part, const wchar_t* text);
 
 
@@ -39,6 +46,76 @@ void UpdateStatusBarText(int part, const wchar_t* text)
 {
     SendMessage(hStatus, SB_SETTEXT, part, (LPARAM)text);
 }
+
+void PopulateDrives()
+{
+    // Clear the existing items
+    ListView_DeleteAllItems(hListView);
+    ImageList_RemoveAll(hImageList);
+
+    // Add the drives and partitions to the ListView
+    DWORD drives = GetLogicalDrives();
+    WCHAR driveName[] = L"A:\\";
+    for (int i = 0; i < 26; ++i)
+    {
+        if (drives & (1 << i))
+        {
+            driveName[0] = L'A' + i;
+
+            // Get drive type
+            UINT driveType = GetDriveType(driveName);
+            const wchar_t* driveTypeStr = L"Unknown";
+            switch (driveType)
+            {
+            case DRIVE_REMOVABLE: driveTypeStr = L"Removable"; break;
+            case DRIVE_FIXED: driveTypeStr = L"Fixed"; break;
+            case DRIVE_REMOTE: driveTypeStr = L"Network"; break;
+            case DRIVE_CDROM: driveTypeStr = L"CD-ROM"; break;
+            case DRIVE_RAMDISK: driveTypeStr = L"RAM Disk"; break;
+            }
+
+            // Get file system type
+            WCHAR fileSystemName[MAX_PATH];
+            GetVolumeInformation(driveName, NULL, 0, NULL, NULL, NULL, fileSystemName, MAX_PATH);
+
+            // Get total and used size
+            ULARGE_INTEGER freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes;
+            GetDiskFreeSpaceEx(driveName, &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes);
+            ULONGLONG usedBytes = totalNumberOfBytes.QuadPart - totalNumberOfFreeBytes.QuadPart;
+
+            // Get the drive icon
+            SHFILEINFO shFileInfo;
+            SHGetFileInfo(driveName, 0, &shFileInfo, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON);
+            int iconIndex = ImageList_AddIcon(hImageList, shFileInfo.hIcon);
+            DestroyIcon(shFileInfo.hIcon);
+
+            // Insert the drive information into the ListView
+            LVITEM lvItem = { 0 };
+            lvItem.mask = LVIF_TEXT | LVIF_IMAGE;
+            lvItem.iItem = ListView_GetItemCount(hListView);
+            lvItem.iSubItem = 0;
+            lvItem.pszText = driveName;
+            lvItem.iImage = iconIndex;
+            ListView_InsertItem(hListView, &lvItem);
+
+            //ListView_SetItemText(hListView, lvItem.iItem, 1, driveName);
+            ListView_SetItemText(hListView, lvItem.iItem, 1, (LPWSTR)driveTypeStr);
+            ListView_SetItemText(hListView, lvItem.iItem, 2, fileSystemName);
+
+            WCHAR sizeStr[64];
+            swprintf_s(sizeStr, 64, L"%llu GB", totalNumberOfBytes.QuadPart / (1024 * 1024 * 1024));
+            ListView_SetItemText(hListView, lvItem.iItem, 3, sizeStr);
+
+            swprintf_s(sizeStr, 64, L"%llu GB", usedBytes / (1024 * 1024 * 1024));
+            ListView_SetItemText(hListView, lvItem.iItem, 4, sizeStr);
+
+            // Codepage and physical address are not directly available, so we leave them empty for now
+            ListView_SetItemText(hListView, lvItem.iItem, 5, (LPWSTR)L"");
+            ListView_SetItemText(hListView, lvItem.iItem, 6, (LPWSTR)L"");
+        }
+    }
+}
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -83,8 +160,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return (int) msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -142,6 +217,50 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    SendMessage(hStatus, SB_SETPARTS, _countof(statusWidths), (LPARAM)statusWidths);
    SendMessage(hStatus, SB_SETTEXT, 0, (LPARAM)L"Ready");
 
+   // Create the ListView control for displaying the drives and volumes
+   hListView = CreateWindowW(WC_LISTVIEW, L"",
+       WS_CHILD | WS_VISIBLE | LVS_REPORT,
+       0, 0, 590, 150, hWnd, nullptr, hInstance, nullptr);
+
+   // Create the image list
+   hImageList = ImageList_Create(16, 16, ILC_COLOR32, 1, 1);
+   ListView_SetImageList(hListView, hImageList, LVSIL_SMALL);
+
+   // Initialize the ListView columns
+   LVCOLUMN lvColumn;
+   lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+   lvColumn.cx = 100;
+
+   // Define the column text as non-const wchar_t arrays
+   wchar_t iconText[] = L"Drive";
+   wchar_t typeText[] = L"Type";
+   wchar_t fileSystemText[] = L"File System";
+   wchar_t totalSizeText[] = L"Total Size";
+   wchar_t usedSizeText[] = L"Used Size";
+   wchar_t codepageText[] = L"Codepage";
+   wchar_t physicalAddressText[] = L"Physical Address";
+
+   lvColumn.pszText = iconText;
+   ListView_InsertColumn(hListView, 0, &lvColumn);
+
+   lvColumn.pszText = typeText;
+   ListView_InsertColumn(hListView, 1, &lvColumn);
+
+   lvColumn.pszText = fileSystemText;
+   ListView_InsertColumn(hListView, 2, &lvColumn);
+
+   lvColumn.pszText = totalSizeText;
+   ListView_InsertColumn(hListView, 3, &lvColumn);
+
+   lvColumn.pszText = usedSizeText;
+   ListView_InsertColumn(hListView, 4, &lvColumn);
+
+   lvColumn.pszText = codepageText;
+   ListView_InsertColumn(hListView, 5, &lvColumn);
+
+   lvColumn.pszText = physicalAddressText;
+   ListView_InsertColumn(hListView, 6, &lvColumn);
+
    // Get the screen dimensions
    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -162,6 +281,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    //EnableDarkMode(hWnd);
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
+
+   // Populate the Drives ListView with initial drive information
+   PopulateDrives();
 
    return TRUE;
 }

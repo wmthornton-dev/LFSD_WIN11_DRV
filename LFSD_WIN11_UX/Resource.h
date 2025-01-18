@@ -21,6 +21,7 @@
 #define IDC_LFSDWIN11UX_UNKNOWN 120
 #define IDC_ERROR				121
 #define IDC_STATUSBAR           122
+#define IDC_LISTVIEW			1001
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
