@@ -204,15 +204,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case IDM_HELP:
         {
-            // Check for the presence of the "Help.lfsd" file
+            // Check for the presence of the "Help.md" file
             WIN32_FIND_DATA findFileData;
-            HANDLE hFind = FindFirstFile(L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.lfsd", &findFileData);
+            HANDLE hFind = FindFirstFile(L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.html", &findFileData);
 
             if (hFind != INVALID_HANDLE_VALUE)
             {
                 // File exists, open it in Notepad.exe
                 FindClose(hFind);
-                ShellExecute(NULL, L"open", L"msedge.exe", L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.lfsd", NULL, SW_SHOWNORMAL);
+                ShellExecute(NULL, L"open", L"msedge.exe", L"C:\\ProgramData\\LFSD_Manager\\Help\\Help.html", NULL, SW_SHOWNORMAL);
             }
             else
             {
